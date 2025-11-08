@@ -89,6 +89,7 @@ contract CollateralManager is ReentrancyGuard {
 
     // @param asset: collateral asset address
     // @param amount: amount of collateral to deposit
+    // @Kevin this function transfers the collateral asset from user to this contract
     function depositCollateral(address asset, uint256 amount) external nonReentrant {
         if(!s_supportedAssets[asset]){
             revert CollateralManager__UnsupportedAsset();
@@ -107,7 +108,7 @@ contract CollateralManager is ReentrancyGuard {
 
     // @param asset: collateral asset address
     // @param amount: amount of collateral to withdraw
-    // @dev user can only withdraw if their health factor after withdrawal is above LIQUIDATION_RISK_RATIO
+    // @Kevin user can only withdraw if their health factor after withdrawal is above LIQUIDATION_RISK_RATIO
     function withdrawCollateral(address asset, uint256 amount) external nonReentrant {
         if(s_stakerCollaterals[msg.sender][asset] < amount){
             revert CollateralManager__InsufficientCollateral();
@@ -124,15 +125,19 @@ contract CollateralManager is ReentrancyGuard {
             }
         }
 
+        // remove asset entry if both collateral and debt are zero(user may didn't use this system)
+        // can get gas refund this way
         if(userDebt == 0 && s_stakerCollaterals[msg.sender][asset] == 0){
             delete s_stakerCollaterals[msg.sender][asset];
         }
+
         emit CollateralWithdrawn(msg.sender, asset, amount);
     }
 
     // @param synAsset: synthetic asset address
     // @param amount: amount of synthetic asset to mint
-    // @dev user can only mint up to theirself collateral value / MINT_RISK_RATIO
+    // @Kevin user can only mint up to theirself collateral value / MINT_RISK_RATIO
+    // @Kevin Follow FREE-PI Standard
     function mintSyntheticAsset(address synAsset, uint256 amount) external nonReentrant{
         if(!s_supportedSyntheticAssets[synAsset]){
             revert CollateralManager__UnsupportedSyntheticAsset();
@@ -143,18 +148,26 @@ contract CollateralManager is ReentrancyGuard {
         uint256 userCollateral = getUserCollateralUSD(msg.sender);
         uint256 increasedDebt = uint256(s_priceOracle.getPrice(ISynAsset(synAsset).representativeAsset())) * amount / 1e18;
         uint256 newDebt = userDebt + increasedDebt;
+        // check if health factor is above MINT_RISK_RATIO after minting
         if(userCollateral * DECIMAL_PRECISION / newDebt < MINT_RISK_RATIO){
             revert CollateralManager__InsufficientCollateral();
         }
+
         s_debtPool.increaseDebt(msg.sender, increasedDebt);
         ISynAsset(synAsset).mint(msg.sender, amount);
+
+        // check if health factor is still above LIQUIDATION_RISK_RATIO after minting
+        uint256 finalUserDebt = s_debtPool.getUserDebt(msg.sender);
+        if(userCollateral * DECIMAL_PRECISION / finalUserDebt < LIQUIDATION_RISK_RATIO){
+            revert CollateralManager__InsufficientCollateral();
+        }
 
         emit SyntheticAssetMinted(msg.sender, synAsset, amount);
     }
 
     // @param synAsset: synthetic asset address
     // @param amount: amount of synthetic asset to burn
-    // @dev user can only burn up to theirself debt amount
+    // @Kevin user can only burn up to theirself debt amount
     function burnSyntheticAsset(address synAsset, uint256 amount) external nonReentrant{
         if(!s_supportedSyntheticAssets[synAsset]){
             revert CollateralManager__UnsupportedSyntheticAsset();
@@ -171,7 +184,10 @@ contract CollateralManager is ReentrancyGuard {
         emit SyntheticAssetBurned(msg.sender, synAsset, amount);
     }
 
-    // Only support to use sUSD as liquidation payment
+    // @param user: the user to be liquidated
+    // @param amount: amount of debt to liquidate in USD
+    // @Kevin liquidator will receive collateral + bonus. sUSD will be used to settle the debt
+    // @Kevin I want liquidator to share some profit to the staker by swaping other synthetic assets to sUSD later.
     function liquidate(address user, uint256 amount) external nonReentrant{
         // first check if user is eligible for liquidation
         uint256 userDebt = s_debtPool.getUserDebt(user);
@@ -195,15 +211,13 @@ contract CollateralManager is ReentrancyGuard {
             uint256 bonusAmountUSD = (liquidateAmountUSD * LIQUIDATION_BONUS) / DECIMAL_PRECISION;
             uint256 totalPayoutAsset = (liquidateAmountUSD + bonusAmountUSD) * DECIMAL_PRECISION / uint256(s_priceOracle.getPrice(asset));
 
-            // START: Transfer collateral asset to liquidator
+            // Transfer collateral asset to liquidator
             s_stakerCollaterals[user][asset] -= totalPayoutAsset;
             IERC20(asset).safeTransfer(msg.sender, totalPayoutAsset);
-            // END: Transfer collateral asset to liquidator
 
-            // START: Burn sUSD from liquidator and decrease user debt
+            // Burn sUSD from liquidator and decrease user debt
             ISynAsset(i_sUSD).burn(msg.sender, liquidateAmountUSD);
             s_debtPool.decreaseDebt(user, liquidateAmountUSD);
-            // END: Burn sUSD from liquidator and decrease user debt
         }
 
         // Check the user's health factor after liquidation
@@ -216,6 +230,8 @@ contract CollateralManager is ReentrancyGuard {
         }
         emit LiquidationExecuted(msg.sender, user, debtToLiquidate);
     }
+
+    // ============ Getter Functions ============
     
     function isAssetSupported(address asset) public view returns (bool){
         return s_supportedAssets[asset];

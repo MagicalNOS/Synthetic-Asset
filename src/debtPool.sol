@@ -1,11 +1,4 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ISynAsset} from "./interfaces/ISynAsset.sol";
-import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
-import {IDebtPool} from "./interfaces/IDebtPool.sol";
 
 //     ▄▄▄▄                                           ▄▄▄▄▄▄                        ▄▄                           
 //   ██▀▀▀▀█                                          ██▀▀▀▀██                      ██                    ██     
@@ -18,6 +11,15 @@ import {IDebtPool} from "./interfaces/IDebtPool.sol";
 // Author: Kevin Lee
 // Date: 2025-11-06
 // Description: Global Shared Debt Pool Contract
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ISynAsset} from "./interfaces/ISynAsset.sol";
+import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
+import {IDebtPool} from "./interfaces/IDebtPool.sol";
 
 contract DebtPool is ReentrancyGuard, Ownable {
 
