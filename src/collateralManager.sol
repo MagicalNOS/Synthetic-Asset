@@ -1,5 +1,3 @@
-                                                                                      
-                                                                                                              
 //     ▄▄▄▄                                           ▄▄▄▄▄▄                        ▄▄                           
 //   ██▀▀▀▀█                                          ██▀▀▀▀██                      ██                    ██     
 //  ██▀        ▄████▄   ▄▄█████▄  ████▄██▄   ▄████▄   ██    ██   ▄█████▄  ▄▄█████▄  ██ ▄██▀    ▄████▄   ███████  
@@ -21,6 +19,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IDebtPool} from "./interfaces/IDebtPool.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {ISynAsset} from "./interfaces/ISynAsset.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 contract CollateralManager is ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -41,6 +40,8 @@ contract CollateralManager is ReentrancyGuard {
     error CollateralManager__HealthyPosition();
     error CollateralManager__InvalidLiquidation();
     error CollateralManager__RiskyPosition();
+    error CollateralManager__ZeroAmount();
+    error CollateralManager__ProtocolInvariantViolated();
 
     // ============ State Variables ============
     uint256 public constant DECIMAL_PRECISION = 1e18; // 18 decimals precision
@@ -66,16 +67,16 @@ contract CollateralManager is ReentrancyGuard {
     // synthetic asset address => is supported
     mapping(address => bool) private s_supportedSyntheticAssets;
 
-    // asset address => collateral ratio 
-
     constructor(
         address priceOracleAddress,
         address debtPoolAddress,
+        address sUSD,
         address[] memory supportedAssets,
         address[] memory supportedSyntheticAssets
     ) {
         s_priceOracle = IPriceOracle(priceOracleAddress);
         s_debtPool = IDebtPool(debtPoolAddress);
+        i_sUSD = sUSD;
 
         for(uint256 i = 0; i < supportedAssets.length; i++){
             s_supportedAssets[supportedAssets[i]] = true;
@@ -90,14 +91,25 @@ contract CollateralManager is ReentrancyGuard {
     // @param asset: collateral asset address
     // @param amount: amount of collateral to deposit
     // @Kevin this function transfers the collateral asset from user to this contract
+    // @Kevin Follow FREI-PI Standard
     function depositCollateral(address asset, uint256 amount) external nonReentrant {
+        // F: Function Requirements
         if(!s_supportedAssets[asset]){
             revert CollateralManager__UnsupportedAsset();
         }
+        if(amount == 0){
+            revert CollateralManager__ZeroAmount();
+        }
 
+        // E: Effects
         uint256 preBalance = IERC20(asset).balanceOf(address(this));
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
         s_stakerCollaterals[msg.sender][asset] += amount;
+
+        // I: Interactions
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
+
+        // PI: Protocol Invariants
+        // PI-1: Balance change must match deposit amount
         uint256 postBalance = IERC20(asset).balanceOf(address(this));
         if(postBalance - preBalance != amount){
             revert CollateralManager__TrasferFailed();
@@ -109,14 +121,28 @@ contract CollateralManager is ReentrancyGuard {
     // @param asset: collateral asset address
     // @param amount: amount of collateral to withdraw
     // @Kevin user can only withdraw if their health factor after withdrawal is above LIQUIDATION_RISK_RATIO
+    // @Kevin Follow FREI-PI Standard
     function withdrawCollateral(address asset, uint256 amount) external nonReentrant {
+        // F: Function Requirements
+        if(!s_supportedAssets[asset]){
+            revert CollateralManager__UnsupportedAsset();
+        }
         if(s_stakerCollaterals[msg.sender][asset] < amount){
             revert CollateralManager__InsufficientCollateral();
         }
+        if(amount == 0){
+            revert CollateralManager__ZeroAmount();
+        }
+
+        // E: Effects
+        uint256 userDebtBefore = s_debtPool.getUserDebt(msg.sender);
         s_stakerCollaterals[msg.sender][asset] -= amount;
+
+        // I: Interactions
         IERC20(asset).safeTransfer(msg.sender, amount);
 
-        // Check health factor after withdrawal
+        // PI: Protocol Invariants
+        // PI-1: Health factor must remain above liquidation threshold if user has debt
         uint256 userDebt = s_debtPool.getUserDebt(msg.sender);
         if(userDebt > 0){
             uint256 userCollateral = getUserCollateralUSD(msg.sender);
@@ -124,9 +150,11 @@ contract CollateralManager is ReentrancyGuard {
                 revert CollateralManager__RiskyPosition();
             }
         }
-
-        // remove asset entry if both collateral and debt are zero(user may didn't use this system)
-        // can get gas refund this way
+        // PI-2: Debt should not change during withdrawal
+        if(userDebt != userDebtBefore){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-3: Clean up for gas refund if position is closed
         if(userDebt == 0 && s_stakerCollaterals[msg.sender][asset] == 0){
             delete s_stakerCollaterals[msg.sender][asset];
         }
@@ -137,29 +165,49 @@ contract CollateralManager is ReentrancyGuard {
     // @param synAsset: synthetic asset address
     // @param amount: amount of synthetic asset to mint
     // @Kevin user can only mint up to theirself collateral value / MINT_RISK_RATIO
-    // @Kevin Follow FREE-PI Standard
+    // @Kevin Follow FREI-PI Standard
     function mintSyntheticAsset(address synAsset, uint256 amount) external nonReentrant{
+        // F: Function Requirements
         if(!s_supportedSyntheticAssets[synAsset]){
             revert CollateralManager__UnsupportedSyntheticAsset();
         }
+        if(amount == 0){
+            revert CollateralManager__ZeroAmount();
+        }
 
-        // calculate total collateral value in USD
-        uint256 userDebt = s_debtPool.getUserDebt(msg.sender);
-        uint256 userCollateral = getUserCollateralUSD(msg.sender);
+        // E: Effects - Calculate and validate
+        uint256 userDebtBefore = s_debtPool.getUserDebt(msg.sender);
+        uint256 userCollateralBefore = getUserCollateralUSD(msg.sender);
         uint256 increasedDebt = uint256(s_priceOracle.getPrice(ISynAsset(synAsset).representativeAsset())) * amount / 1e18;
-        uint256 newDebt = userDebt + increasedDebt;
+        uint256 expectedNewDebt = userDebtBefore + increasedDebt;
         // check if health factor is above MINT_RISK_RATIO after minting
-        if(userCollateral * DECIMAL_PRECISION / newDebt < MINT_RISK_RATIO){
+        if(userCollateralBefore * DECIMAL_PRECISION / expectedNewDebt < MINT_RISK_RATIO){
             revert CollateralManager__InsufficientCollateral();
         }
 
+        // I: Interactions
         s_debtPool.increaseDebt(msg.sender, increasedDebt);
         ISynAsset(synAsset).mint(msg.sender, amount);
 
-        // check if health factor is still above LIQUIDATION_RISK_RATIO after minting
-        uint256 finalUserDebt = s_debtPool.getUserDebt(msg.sender);
-        if(userCollateral * DECIMAL_PRECISION / finalUserDebt < LIQUIDATION_RISK_RATIO){
-            revert CollateralManager__InsufficientCollateral();
+        // PI: Protocol Invariants
+        uint256 userDebtAfter = s_debtPool.getUserDebt(msg.sender);
+        uint256 userCollateralAfter = getUserCollateralUSD(msg.sender);
+        // PI-1: Debt must increase by exact amount
+        if(userDebtAfter != userDebtBefore + increasedDebt){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-2: Collateral should remain stable (allowing for oracle price updates)
+        // To prevent manipulation, we allow a small tolerance of 5%
+        if(userCollateralAfter < userCollateralBefore * 95 / 100){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-3: Health factor must stay above MINT_RISK_RATIO
+        if(userCollateralAfter * DECIMAL_PRECISION / userDebtAfter < MINT_RISK_RATIO){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-4: User must remain over-collateralized
+        if(userCollateralAfter <= userDebtAfter){
+            revert CollateralManager__ProtocolInvariantViolated();
         }
 
         emit SyntheticAssetMinted(msg.sender, synAsset, amount);
@@ -168,19 +216,40 @@ contract CollateralManager is ReentrancyGuard {
     // @param synAsset: synthetic asset address
     // @param amount: amount of synthetic asset to burn
     // @Kevin user can only burn up to theirself debt amount
+    // @Kevin Follow FREI-PI Standard
     function burnSyntheticAsset(address synAsset, uint256 amount) external nonReentrant{
+        // F: Function Requirements
         if(!s_supportedSyntheticAssets[synAsset]){
             revert CollateralManager__UnsupportedSyntheticAsset();
         }
-
+        if(amount == 0){
+            revert CollateralManager__ZeroAmount();
+        }
+        
+        // E: Effects
+        uint256 userDebtBefore = s_debtPool.getUserDebt(msg.sender);
         uint256 decreasedDebt = uint256(s_priceOracle.getPrice(ISynAsset(synAsset).representativeAsset())) * amount / 1e18;
         // If user tries to burn more than their debt, adjust the amount to burn only their debt
-        if(decreasedDebt > s_debtPool.getUserDebt(msg.sender)){
-            decreasedDebt = s_debtPool.getUserDebt(msg.sender);
+        if(decreasedDebt > userDebtBefore){
+            decreasedDebt = userDebtBefore;
             amount = (decreasedDebt * 1e18) / uint256(s_priceOracle.getPrice(ISynAsset(synAsset).representativeAsset()));
         }
+
+        // I: Interactions
         s_debtPool.decreaseDebt(msg.sender, decreasedDebt);
         ISynAsset(synAsset).burn(msg.sender, amount);
+
+        // PI: Protocol Invariants
+        uint256 userDebtAfter = s_debtPool.getUserDebt(msg.sender);
+        // PI-1: Debt must decrease correctly (or become zero)
+        if(userDebtAfter != (userDebtBefore >= decreasedDebt ? userDebtBefore - decreasedDebt : 0)){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-2: Debt should never increase (underflow protection)
+        if(userDebtAfter > userDebtBefore){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+
         emit SyntheticAssetBurned(msg.sender, synAsset, amount);
     }
 
@@ -188,26 +257,28 @@ contract CollateralManager is ReentrancyGuard {
     // @param amount: amount of debt to liquidate in USD
     // @Kevin liquidator will receive collateral + bonus. sUSD will be used to settle the debt
     // @Kevin I want liquidator to share some profit to the staker by swaping other synthetic assets to sUSD later.
+    // @Kevin Follow FREI-PI Standard
     function liquidate(address user, uint256 amount) external nonReentrant{
-        // first check if user is eligible for liquidation
-        uint256 userDebt = s_debtPool.getUserDebt(user);
-        uint256 userCollateral = getUserCollateralUSD(user);
-        if(userDebt == 0 || userCollateral * DECIMAL_PRECISION / userDebt >= LIQUIDATION_THRESHOLD){
+        // F: Function Requirements
+        uint256 userDebtBefore = s_debtPool.getUserDebt(user);
+        uint256 userCollateralBefore = getUserCollateralUSD(user);
+        if(userDebtBefore == 0 || userCollateralBefore * DECIMAL_PRECISION / userDebtBefore >= LIQUIDATION_THRESHOLD){
             revert CollateralManager__HealthyPosition();
         }
-        // Approximate debt to liquidate
-        uint256 maxDebtToLiquidate = userDebt - (userCollateral * DECIMAL_PRECISION / LIQUIDATION_RISK_RATIO);
+
+        // E: Effects - Calculate liquidation parameters
+        uint256 maxDebtToLiquidate = userDebtBefore - (userCollateralBefore * DECIMAL_PRECISION / LIQUIDATION_RISK_RATIO);
         uint256 debtToLiquidate = amount > maxDebtToLiquidate ? maxDebtToLiquidate : amount;
-        // Liquidation based on the proportion of each collateral asset
+
+        // I: Interactions - Liquidation based on the proportion of each collateral asset
         for(uint i = 0; i < s_supportedAssetsList.length; ++i){
             address asset = s_supportedAssetsList[i];
             uint256 assetCollateral = s_stakerCollaterals[user][asset];
-            uint256 allCollateralUSD = getUserCollateralUSD(user);
             if(assetCollateral == 0){
                 continue;
             }
             uint256 assetValueUSD = (assetCollateral * uint256(s_priceOracle.getPrice(asset))) / 1e18;
-            uint256 liquidateAmountUSD = ((assetValueUSD * DECIMAL_PRECISION / allCollateralUSD) * debtToLiquidate) / DECIMAL_PRECISION;
+            uint256 liquidateAmountUSD = ((assetValueUSD * DECIMAL_PRECISION / userCollateralBefore) * debtToLiquidate) / DECIMAL_PRECISION;
             uint256 bonusAmountUSD = (liquidateAmountUSD * LIQUIDATION_BONUS) / DECIMAL_PRECISION;
             uint256 totalPayoutAsset = (liquidateAmountUSD + bonusAmountUSD) * DECIMAL_PRECISION / uint256(s_priceOracle.getPrice(asset));
 
@@ -220,14 +291,26 @@ contract CollateralManager is ReentrancyGuard {
             s_debtPool.decreaseDebt(user, liquidateAmountUSD);
         }
 
-        // Check the user's health factor after liquidation
-        uint256 updatedUserDebt = s_debtPool.getUserDebt(user);
-        uint256 updatedUserCollateral = getUserCollateralUSD(user);
-        uint256 newHealthFactor = updatedUserCollateral * DECIMAL_PRECISION / updatedUserDebt;
-        uint256 oldHealthFactor = userCollateral * DECIMAL_PRECISION / userDebt;
-        if(newHealthFactor <= oldHealthFactor){
+        // PI: Protocol Invariants
+        uint256 userDebtAfter = s_debtPool.getUserDebt(user);
+        uint256 userCollateralAfter = getUserCollateralUSD(user);
+        // PI-1: User debt must decrease
+        if(userDebtAfter >= userDebtBefore){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-2: User collateral must decrease
+        if(userCollateralAfter >= userCollateralBefore){
+            revert CollateralManager__ProtocolInvariantViolated();
+        }
+        // PI-3: Health factor must improve after liquidation
+        uint256 healthFactorBefore = userCollateralBefore * DECIMAL_PRECISION / userDebtBefore;
+        uint256 healthFactorAfter = userDebtAfter > 0 
+            ? userCollateralAfter * DECIMAL_PRECISION / userDebtAfter 
+            : type(uint256).max;
+        if(healthFactorAfter <= healthFactorBefore){
             revert CollateralManager__InvalidLiquidation();
         }
+
         emit LiquidationExecuted(msg.sender, user, debtToLiquidate);
     }
 
@@ -260,5 +343,12 @@ contract CollateralManager is ReentrancyGuard {
             }
         }
         return totalCollateralUSD;
+    }
+
+    function getUserHealthFactor(address user) public view returns (uint256){
+        uint256 userDebt = s_debtPool.getUserDebt(user);
+        if(userDebt == 0) return type(uint256).max;
+        uint256 userCollateral = getUserCollateralUSD(user);
+        return userCollateral * DECIMAL_PRECISION / userDebt;
     }
 }
