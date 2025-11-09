@@ -5,6 +5,9 @@ pragma solidity ^0.8.0;
 interface IDebtPool {
     function increaseDebt(address user, uint256 amount) external;
     function decreaseDebt(address user, uint256 amount) external;
+    function claimRewards(address user) external returns (uint256);
+    function distributeRewards(uint256 amount) external;
+    function getUserPendingRewards(address user) external view returns (uint256);
     function getUserDebt(address user) external view returns (uint256);
     function getTotalDebt() external view returns (uint256);
     function getUserDebtShare(address user) external view returns (uint256);
