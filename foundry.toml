@@ -8,5 +8,10 @@ remappings = [
     "@chainlink/contracts/src/v0.8/interfaces=lib/chainlink-evm/contracts/src/v0.8/shared/interfaces"
 ]
 
+[invariant]
+runs = 256
+depth = 30
+fail_on_revert = true
+
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

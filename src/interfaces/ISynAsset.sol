@@ -17,6 +17,6 @@ pragma solidity ^0.8.20;
 interface ISynAsset {
     function mint(address to, uint256 amount) external;
     function burn(address from, uint256 amount) external;
-    function representativeAsset() external pure returns (address);
+    function anchorAddress() external view returns (address);
     function totalSupply() external view returns (uint256);
 }
