@@ -5,6 +5,7 @@ import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {ISynAsset} from "./interfaces/ISynAsset.sol";
 import {IDebtPool} from "./interfaces/IDebtPool.sol";
 import {CollateralManager} from "./CollateralManager.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract Exchanger {
     uint256 public constant EXCHANGE_FEE_RATE = 5e15; // 0.5% fee
@@ -98,12 +99,18 @@ contract Exchanger {
         if (amount > 0) {
             // exchange exact input
             uint256 amountIn = uint256(amount);
-            uint256 amountInValueUSD = (amountIn * fromPrice) /
-                DECIMAL_PRECISION;
+            uint256 amountInValueUSD = Math.mulDiv(
+                amountIn,
+                fromPrice,
+                DECIMAL_PRECISION
+            );
             uint256 feeUSD = _calculateExchangeFee(amountInValueUSD);
             uint256 amountOutValueUSD = amountInValueUSD - feeUSD;
-            uint256 amountOut = (amountOutValueUSD * DECIMAL_PRECISION) /
-                toPrice;
+            uint256 amountOut = Math.mulDiv(
+                amountOutValueUSD,
+                DECIMAL_PRECISION,
+                toPrice
+            );
 
             // infinity liquidity, no any slippage
             // the from asset will be charged fees, and distributed to stakers in the debt pool
@@ -114,12 +121,18 @@ contract Exchanger {
         } else {
             // exchange exact output
             uint256 amountOut = uint256(-amount);
-            uint256 amountOutValueUSD = (amountOut * toPrice) /
-                DECIMAL_PRECISION;
+            uint256 amountOutValueUSD = Math.mulDiv(
+                amountOut,
+                toPrice,
+                DECIMAL_PRECISION
+            );
             uint256 feeUSD = _calculateExchangeFee(amountOutValueUSD);
             uint256 amountInValueUSD = amountOutValueUSD + feeUSD;
-            uint256 amountIn = (amountInValueUSD * DECIMAL_PRECISION) /
-                fromPrice;
+            uint256 amountIn = Math.mulDiv(
+                amountInValueUSD,
+                DECIMAL_PRECISION,
+                fromPrice
+            );
 
             // infinity liquidity, no any slippage
             // the from asset will be charged fees, and distributed to stakers in the debt pool
@@ -133,6 +146,6 @@ contract Exchanger {
     function _calculateExchangeFee(
         uint256 amount
     ) internal pure returns (uint256) {
-        return (amount * EXCHANGE_FEE_RATE) / DECIMAL_PRECISION;
+        return Math.mulDiv(amount, EXCHANGE_FEE_RATE, DECIMAL_PRECISION);
     }
 }

@@ -18,6 +18,7 @@ import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISynAsset} from "./interfaces/ISynAsset.sol";
 import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
 import {IDebtPool} from "./interfaces/IDebtPool.sol";
@@ -124,8 +125,11 @@ contract DebtPool is ReentrancyGuard, Ownable, AccessControl {
             uint256 currentTotalDebt = _calculateTotalDebtUSD();
             if (currentTotalDebt == 0) revert DebtPool__ZeroTotalDebt();
 
-            uint256 newShares = (amountUSD * s_totalDebtShares) /
-                currentTotalDebt;
+            uint256 newShares = Math.mulDiv(
+                amountUSD,
+                s_totalDebtShares,
+                currentTotalDebt
+            );
             s_totalDebtShares += newShares;
             s_userDebtShares[user] += newShares;
         }
@@ -145,8 +149,11 @@ contract DebtPool is ReentrancyGuard, Ownable, AccessControl {
         uint256 total_debt_usd = _calculateTotalDebtUSD();
         if (total_debt_usd == 0) revert DebtPool__ZeroTotalDebt();
 
-        uint256 shares_to_burn = (amountUSD * s_totalDebtShares) /
-            total_debt_usd;
+        uint256 shares_to_burn = Math.mulDiv(
+            amountUSD,
+            s_totalDebtShares,
+            total_debt_usd
+        );
 
         if (shares_to_burn > s_userDebtShares[user]) {
             revert DebtPool__InsufficientDebt();
@@ -167,11 +174,17 @@ contract DebtPool is ReentrancyGuard, Ownable, AccessControl {
         if (s_totalDebtShares == 0) {
             revert DebtPool__ZeroTotalDebt();
         }
+        // Prevent overflow of index when total shares are tiny
+        if (s_totalDebtShares < 1e12) {
+            return; // Skip reward distribution for dust amounts
+        }
 
         // Update global accumulated reward index
-        s_globalAccRewardIndex +=
-            (rewardAmountUSD * DECIMAL_PRECISION) /
-            s_totalDebtShares;
+        s_globalAccRewardIndex += Math.mulDiv(
+            rewardAmountUSD,
+            DECIMAL_PRECISION,
+            s_totalDebtShares
+        );
     }
 
     function claimRewards() external nonReentrant returns (uint256) {
@@ -198,8 +211,11 @@ contract DebtPool is ReentrancyGuard, Ownable, AccessControl {
             // Calculate pending rewards
             uint256 rewardDelta = s_globalAccRewardIndex -
                 s_userRewardIndex[user];
-            uint256 pendingReward = (userShare * rewardDelta) /
-                DECIMAL_PRECISION;
+            uint256 pendingReward = Math.mulDiv(
+                userShare,
+                rewardDelta,
+                DECIMAL_PRECISION
+            );
             // Update user's pending rewards
             s_userPendingRewards[user] += pendingReward;
         }
@@ -219,7 +235,7 @@ contract DebtPool is ReentrancyGuard, Ownable, AccessControl {
         }
         // calculate how much synAsset is minted(debt)
         uint256 total_supply = synAsset.totalSupply();
-        return (uint256(price) * total_supply) / DECIMAL_PRECISION;
+        return Math.mulDiv(uint256(price), total_supply, DECIMAL_PRECISION);
     }
 
     function _calculateTotalDebtUSD() internal view returns (uint256) {
@@ -238,7 +254,7 @@ contract DebtPool is ReentrancyGuard, Ownable, AccessControl {
         uint256 total_debt_usd = _calculateTotalDebtUSD();
         uint256 user_debt_shares = s_userDebtShares[user];
 
-        return (user_debt_shares * total_debt_usd) / s_totalDebtShares;
+        return Math.mulDiv(user_debt_shares, total_debt_usd, s_totalDebtShares);
     }
 
     function getTotalDebtUSD() external view returns (uint256) {
