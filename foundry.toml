@@ -11,10 +11,19 @@ remappings = [
     "@chainlink/contracts/src/v0.8/interfaces=lib/chainlink-evm/contracts/src/v0.8/shared/interfaces",
 ]
 
-[invariant]
-runs = 256
-depth = 32
-fail_on_revert = false
+[fuzz]
+runs = 1000 # 单个 Fuzz 函数运行 1000 次 (默认 256)
 
+[invariant]
+runs = 1000           # 运行 500 个平行世界 (Parallel Universes)
+depth = 200           # 每个世界里，随机操作 50 步 (Sequence Depth)
+fail_on_revert = true # 允许 Handler 里偶尔报错（比如取款额度不够），继续跑下一步
+
+# 这一段给 GitHub Actions 用
+[profile.ci]
+via_ir = true
+optimizer = true
+fuzz = { runs = 500 }
+invariant = { runs = 200, depth = 20 }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

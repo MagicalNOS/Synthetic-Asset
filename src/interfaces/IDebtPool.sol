@@ -11,7 +11,7 @@ interface IDebtPool {
     ) external view returns (uint256);
     function getUserDebtUSD(address user) external view returns (uint256);
     function getTotalDebtUSD() external view returns (uint256);
-    function getUserDebtShare(address user) external view returns (uint256);
+    function getUserDebtShares(address user) external view returns (uint256);
     function updateUserBoost(address user) external;
 
     // Asset Management

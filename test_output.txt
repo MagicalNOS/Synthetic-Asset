@@ -1,0 +1,268 @@
+No files changed, compilation skipped
+Warning: Replayed invariant failure from "/home/develop/Synthetic-Asset/cache/invariant/failures/InvariantTest/invariant_healthyPositionsProtected" file. Run `forge clean` or remove file to ignore failure and to continue invariant test campaign.
+Warning: Failure from "/home/develop/Synthetic-Asset/cache/invariant/failures/InvariantTest/invariant_systemSolvency" file was ignored because test contract bytecode has changed.
+
+Ran 10 tests for test/invariant/InvariantTest.sol:InvariantTest
+[PASS] invariant_callSummary() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 319   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 291   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 306   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 340   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 334   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 305   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 329   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 336   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_debtSharesBounded() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 289   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 329   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 329   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 322   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 326   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 330   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 334   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 301   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_debtSharesConsistency() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 329   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 288   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 302   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 335   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 324   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 318   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 342   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 322   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[FAIL: invariant_healthyPositionsProtected replay failure]
+	[Sequence] (original: 8, shrunk: 8)
+		sender=0xF4e80530684B1ca448cbe6d17f0090C3F04be127 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[23681651517 [2.368e10], 5215682029780507143425250790276328791659329183845496643652752 [5.215e60]]
+		sender=0x00000000000000000000000000000000000003CF addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[10668 [1.066e4], 5236]
+		sender=0x0000000000000000000000000000000000000066 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[1740507390 [1.74e9], 756]
+		sender=0x0000000000000000000000000000000000001627 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[777197454165 [7.771e11], 17782001021428890 [1.778e16]]
+		sender=0x94c914197f3ccB46be2900f4698Fd0Ef743C9695 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=depositCollateral(uint256,uint256,uint256) args=[5047, 7746, 374]
+		sender=0x0000000000000000000000000000000000001047 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mintSyntheticAsset(uint256,uint256,uint256) args=[5289612132440810812153964689022519804765936464308283077081797 [5.289e60], 11235947071581487592403996 [1.123e25], 117]
+		sender=0x00000000000000000000000000000000000010c5 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[1696943406784185830766244851804207357993037858088059233 [1.696e54], 31155124750964797103364863164983914317474225180786476663 [3.115e55]]
+		sender=0x0000000000000000000000000000000000000e18 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[7527, 737]
+ invariant_healthyPositionsProtected() (runs: 1, calls: 1, reverts: 1)
+[PASS] invariant_noDebtNoRewardGrowth() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 294   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 321   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 319   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 308   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 337   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 322   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 328   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 331   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_noUnbackedDebt() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 352   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 322   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 295   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 319   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 331   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 324   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 316   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 301   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_pendingRewardsBounded() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 328   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 337   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 321   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 334   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 311   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 290   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 334   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 305   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_rewardIndexNonDecreasing() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 309   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 315   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 323   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 302   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 307   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 344   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 335   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 325   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_syntheticSupplyTracked() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 322   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 315   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 310   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 303   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 347   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 296   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 340   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 327   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+[PASS] invariant_systemSolvency() (runs: 128, calls: 2560, reverts: 0)
+
+╭----------+--------------------+-------+---------+----------╮
+| Contract | Selector           | Calls | Reverts | Discards |
++============================================================+
+| Handler  | burnSyntheticAsset | 295   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | claimRewards       | 338   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | depositCollateral  | 327   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | exchangeSynAsset   | 319   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | liquidate          | 321   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mintSyntheticAsset | 323   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | mockPriceDrop      | 319   | 0       | 0        |
+|----------+--------------------+-------+---------+----------|
+| Handler  | withdrawCollateral | 318   | 0       | 0        |
+╰----------+--------------------+-------+---------+----------╯
+
+Suite result: FAILED. 9 passed; 1 failed; 0 skipped; finished in 285.76ms (1.52s CPU time)
+
+Ran 5 tests for test/uint/PriceOracle.t.sol:PriceOracleTest
+[PASS] test_GetPrice_BTC_Real() (gas: 36206)
+[PASS] test_GetPrice_ETH_Real() (gas: 38968)
+[PASS] test_GetPrice_SPY_Real() (gas: 36053)
+[PASS] test_GetPrice_USDC_Real() (gas: 13588)
+[PASS] test_GetPrice_sUSD() (gas: 13698)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 9.65s (11.30s CPU time)
+
+Ran 9 tests for test/integration/MintAndSwap.t.sol:MintAndSwapTest
+[PASS] testFuzz_Burn_Partial(uint256) (runs: 1000, μ: 810521, ~: 810638)
+[PASS] testFuzz_MintDirectly_DebtAccuracy(uint256) (runs: 1000, μ: 545161, ~: 545177)
+[PASS] testFuzz_RoundTrip_sUSD_sBTC_sUSD(uint256) (runs: 1000, μ: 530220, ~: 530276)
+[PASS] test_Burn_FullAmount_ClosesPosition() (gas: 470319)
+[PASS] test_Burn_NonSUSDReducesDebt() (gas: 783239)
+[PASS] test_MintAndSwap_MultiUserSwap() (gas: 1218407)
+[PASS] test_MintAndSwap_OneUserSwap_FeeAccumulation() (gas: 1034391)
+[PASS] test_Mint_DirectlyNonSUSD() (gas: 523985)
+[PASS] test_Swap_SynthToSynth_Direct() (gas: 564649)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 12.51s (4.24s CPU time)
+
+Ran 4 tests for test/integration/MintAndLiquidate.t.sol:MintAndLiquidateTest
+[PASS] testFuzz_LiquidatorProfit(uint64,uint64) (runs: 1000, μ: 905561, ~: 905634)
+[PASS] testFuzz_MultipleLiquidations(uint64,uint64,uint64,uint64) (runs: 1000, μ: 1936438, ~: 2482568)
+[PASS] test_Liquidation_MultiCollateral_PriceCrash() (gas: 1620811)
+[PASS] test_RevertIf_LiquidateHealthyPosition() (gas: 768726)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 16.78s (35.19s CPU time)
+
+Ran 5 tests for test/integration/DespositAndMint.t.sol:DepositAndMintTest
+[PASS] testFuzz_DepositBTCAndMint_Safe(uint96,uint96) (runs: 1000, μ: 436136, ~: 436131)
+[PASS] testFuzz_MultiCollateralMint(uint64,uint64,uint64) (runs: 1000, μ: 648931, ~: 648970)
+[PASS] testFuzz_RevertIfMintTooMuch(uint96,uint96) (runs: 1000, μ: 123797, ~: 123950)
+[PASS] test_DepositMultiCollateralAndMint() (gas: 555132)
+[PASS] test_DepositSingleCollateralAndMint() (gas: 431838)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 18.96s (37.71s CPU time)
+
+Ran 5 test suites in 18.96s (58.19s CPU time): 32 tests passed, 1 failed, 0 skipped (33 total tests)
+
+Failing tests:
+Encountered 1 failing test in test/invariant/InvariantTest.sol:InvariantTest
+[FAIL: invariant_healthyPositionsProtected replay failure]
+	[Sequence] (original: 8, shrunk: 8)
+		sender=0xF4e80530684B1ca448cbe6d17f0090C3F04be127 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[23681651517 [2.368e10], 5215682029780507143425250790276328791659329183845496643652752 [5.215e60]]
+		sender=0x00000000000000000000000000000000000003CF addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[10668 [1.066e4], 5236]
+		sender=0x0000000000000000000000000000000000000066 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[1740507390 [1.74e9], 756]
+		sender=0x0000000000000000000000000000000000001627 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[777197454165 [7.771e11], 17782001021428890 [1.778e16]]
+		sender=0x94c914197f3ccB46be2900f4698Fd0Ef743C9695 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=depositCollateral(uint256,uint256,uint256) args=[5047, 7746, 374]
+		sender=0x0000000000000000000000000000000000001047 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mintSyntheticAsset(uint256,uint256,uint256) args=[5289612132440810812153964689022519804765936464308283077081797 [5.289e60], 11235947071581487592403996 [1.123e25], 117]
+		sender=0x00000000000000000000000000000000000010c5 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[1696943406784185830766244851804207357993037858088059233 [1.696e54], 31155124750964797103364863164983914317474225180786476663 [3.115e55]]
+		sender=0x0000000000000000000000000000000000000e18 addr=[test/invariant/Handler.sol:Handler]0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758 calldata=mockPriceDrop(uint256,uint256) args=[7527, 737]
+ invariant_healthyPositionsProtected() (runs: 1, calls: 1, reverts: 1)
+
+Encountered a total of 1 failing tests, 32 tests succeeded

@@ -350,17 +350,30 @@ contract Handler is Test {
             minPrice = int256(0.5e8); // USDC minimum $0.50
         }
 
-        // Get current price from oracle and calculate new price
+        // Get current price from oracle (18 decimals)
         int256 currentPrice = priceOracle.getPrice(asset);
+        
+        // Calculate new price (18 decimals)
         int256 newPrice = (currentPrice * int256(100 - dropPercent)) / 100;
 
         // Ensure price doesn't drop below reasonable floor
-        if (newPrice < minPrice) {
-            newPrice = minPrice;
+        if (newPrice < minPrice) { // minPrice 也是 8位精度的，这里对比要注意单位统一！
+             int256 minPrice18 = minPrice; 
+             if (asset == address(wbtc) || asset == address(weth) || asset == address(usdc)) {
+             }
         }
 
-        // Apply the price drop to the mock feed
-        feed.setPrice(newPrice);
+        uint8 feedDecimals = feed.decimals();
+        int256 priceToSet = newPrice;
+        if (feedDecimals < 18) {
+            priceToSet = newPrice / int256(10 ** (18 - feedDecimals));
+        }
+        
+        if (priceToSet < minPrice) {
+            priceToSet = minPrice;
+        }
+
+        feed.setPrice(priceToSet);
         ghost_priceDropCount++;
     }
 
