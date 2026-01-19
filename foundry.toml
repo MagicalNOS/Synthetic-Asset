@@ -23,7 +23,8 @@ fail_on_revert = true # 允许 Handler 里偶尔报错（比如取款额度不�
 [profile.ci]
 via_ir = true
 optimizer = true
+threads = 4
 fuzz = { runs = 500 }
-invariant = { runs = 200, depth = 20 }
+invariant = { runs = 500, depth = 30 }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
